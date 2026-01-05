@@ -107,7 +107,7 @@ Follow these steps to run the project locally.
 
 1.  **Clone the Repository**
     ```bash
-    git clone https://github.com/yourusername/book-app.git
+    git clone https://github.com/MohamedMahmoudAli
     cd book-app
     ```
 
@@ -142,10 +142,10 @@ Follow these steps to run the project locally.
 
 ## 📞 Contact & Support
 
-Created by **[Your Name]** - feel free to contact me!
+Created by **[Mohamed Mamoud]** - feel free to contact me!
 
 - **Email**: [mohamed238ma@gmail.com](mailto:mohamed238ma@gmail.com)
-- **GitHub**: [github.com/yourusername](https://github.com/MohamedMahmoudAli)
+- **GitHub**: [https://github.com/MohamedMahmoudAli](https://github.com/MohamedMahmoudAli)
 
 
 If you found this project helpful, please give it a ⭐️!
