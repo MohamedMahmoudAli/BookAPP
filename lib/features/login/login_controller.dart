@@ -1,64 +1,75 @@
-
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 
 class LoginController extends GetxController {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
   final loginFormKey = GlobalKey<FormState>();
-
   final isLoading = false.obs;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  // GetStorage instance to store UID
+  final box = GetStorage();
+
   void login() async {
-  FocusManager.instance.primaryFocus?.unfocus();
+    FocusManager.instance.primaryFocus?.unfocus();
 
-  if (!loginFormKey.currentState!.validate()) return;
+    if (!loginFormKey.currentState!.validate()) return;
 
-  isLoading.value = true;
+    isLoading.value = true;
 
-  try {
-    await _auth.signInWithEmailAndPassword(
-      email: emailController.text.trim(),
-      password: passwordController.text.trim(),
-    );
+    try {
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
 
-    Get.offAllNamed('/home');
+      // Save UID to GetStorage
+      final uid = userCredential.user?.uid;
+      if (uid != null) {
+        box.write('uid', uid);
+        print("UID saved: $uid");
+      }
 
-  } on FirebaseAuthException catch (e) {
-    String message = 'Login failed';
+      Get.offAllNamed('/home');
 
-    if (e.code == 'user-not-found') {
-      message = 'No user found for that email';
-    } else if (e.code == 'wrong-password') {
-      message = 'Wrong password provided';
+    } on FirebaseAuthException catch (e) {
+      String message = 'Login failed';
+
+      if (e.code == 'user-not-found') {
+        message = 'No user found for that email';
+      } else if (e.code == 'wrong-password') {
+        message = 'Wrong password provided';
+      }
+
+      Get.snackbar(
+        "Error",
+        message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        "Error",
+        "An unexpected error occurred",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
     }
-
-    Get.snackbar(
-      "Error",
-      message,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.redAccent,
-      colorText: Colors.white,
-    );
-  } catch (e) {
-    Get.snackbar(
-      "Error",
-      "An unexpected error occurred",
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.redAccent,
-      colorText: Colors.white,
-    );
-  } finally {
-    isLoading.value = false;
   }
-}
 
-
+  // Retrieve UID
+  String? getUserId() {
+    return box.read('uid');
+  }
 
   @override
   void onClose() {

@@ -37,7 +37,7 @@ class BookController extends GetxController {
         books.clear();
         errorMessage.value = 'No books found for "$query"';
       } else {
-        books.value = results.map((json) => BookModel.fromJson(json)).toList();
+        books.value = results.map((json) => BookModel.fromApiJson(json)).toList();
         log('✅ Successfully loaded ${books.length} books');
       }
     } catch (e) {

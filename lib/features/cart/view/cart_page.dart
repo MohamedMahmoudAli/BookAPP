@@ -1,152 +1,79 @@
 // screens/cart_page.dart
 import 'package:book_app/core/controllers/nav_controller.dart';
-import 'package:flutter/material.dart';
 import 'package:book_app/data/models/book_model.dart';
+import 'package:book_app/features/cart/controller/cart_controller.dart';
+import 'package:book_app/features/cart/data/cart_repository.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-class CartPage extends StatefulWidget {
+class CartPage extends StatelessWidget {
   const CartPage({super.key});
 
   @override
-  State<CartPage> createState() => _CartPageState();
-}
-
-class _CartPageState extends State<CartPage>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
-    );
-    _animationController.forward();
-    
-    // Listen to cart changes
-    CartManager.addListener(_onCartChanged);
-  }
-
-  void _onCartChanged() {
-    if (mounted) {
-      setState(() {
-        // Rebuild when cart changes
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    CartManager.removeListener(_onCartChanged);
-    super.dispose();
-  }
-
-  void _removeFromCart(BookModel book) {
-    CartManager.removeFromCart(book);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${book.title} removed from cart'),
-        backgroundColor: Colors.red.shade400,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
-  }
-
-  void _clearCart() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Clear Cart?'),
-        content: const Text('Are you sure you want to remove all items?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              CartManager.clearCart();
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Cart cleared'),
-                  backgroundColor: Colors.green.shade400,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            child: const Text('Clear All'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final cartItems = CartManager.cartItems;
+     final CartController controller = Get.put(
+      CartController(
+        CartRepository(
+          firestore: FirebaseFirestore.instance,
+          auth: FirebaseAuth.instance,
+        ),
+      ),
+      permanent: true, // optional: keeps controller alive
+    );
+    // final CartController controller = Get.find();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      body: CustomScrollView(
-        slivers: [
-          _buildAppBar(),
-          if (cartItems.isEmpty)
-            SliverFillRemaining(child: _buildEmptyState())
-          else
-            SliverToBoxAdapter(
-              child: FadeTransition(
-                opacity: _fadeAnimation,
+      body: Obx(() {
+        if (controller.isLoading.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final cartItems = controller.cartItems;
+        final itemCount = cartItems.length;
+
+        return CustomScrollView(
+          slivers: [
+            _buildAppBar(itemCount),
+            if (cartItems.isEmpty)
+              SliverFillRemaining(child: _buildEmptyState())
+            else
+              SliverToBoxAdapter(
                 child: Column(
                   children: [
                     const SizedBox(height: 20),
-                    _buildCartItems(cartItems),
+                    _buildCartItems(cartItems, controller),
                     const SizedBox(height: 20),
                     _buildSummary(cartItems),
                     const SizedBox(height: 20),
                     _buildCheckoutButton(),
-                    const SizedBox(height: 100), // Extra space for bottom nav
+                    const SizedBox(height: 100),
                   ],
                 ),
               ),
-            ),
-        ],
-      ),
+          ],
+        );
+      }),
     );
   }
 
-  Widget _buildAppBar() {
-    final itemCount = CartManager.cartItems.length;
-
+  // AppBar
+  SliverAppBar _buildAppBar(int itemCount) {
     return SliverAppBar(
       expandedHeight: 120,
       pinned: true,
       backgroundColor: const Color(0xFF6C63FF),
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-        onPressed: () {
-          Get.find<NavController>().changeIndex(0);
-        },
+        onPressed: () => Get.find<NavController>().changeIndex(0),
       ),
       actions: [
         if (itemCount > 0)
           IconButton(
             icon: const Icon(Icons.delete_sweep, color: Colors.white),
-            onPressed: _clearCart,
+            onPressed: () => Get.find<CartController>().clearCart(),
             tooltip: 'Clear Cart',
           ),
       ],
@@ -210,6 +137,7 @@ class _CartPageState extends State<CartPage>
     );
   }
 
+  // Empty Cart UI
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -243,9 +171,7 @@ class _CartPageState extends State<CartPage>
           ),
           const SizedBox(height: 32),
           ElevatedButton.icon(
-            onPressed: () {
-              Get.find<NavController>().changeIndex(1);
-            },
+            onPressed: () => Get.find<NavController>().changeIndex(1),
             icon: const Icon(Icons.explore),
             label: const Text('Browse Books'),
             style: ElevatedButton.styleFrom(
@@ -262,28 +188,28 @@ class _CartPageState extends State<CartPage>
     );
   }
 
-  Widget _buildCartItems(List<BookModel> items) {
+  // Cart Items List
+  Widget _buildCartItems(List<BookModel> items, CartController controller) {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 20),
       itemCount: items.length,
       itemBuilder: (context, index) {
+        final book = items[index];
         return _CartItemCard(
-          book: items[index],
-          onRemove: () => _removeFromCart(items[index]),
+          book: book,
+          onRemove: () => controller.removeFromCart(book),
         );
       },
     );
   }
 
+  // Summary Card
   Widget _buildSummary(List<BookModel> items) {
-    final total = items.fold<double>(
-      0.0,
-      (sum, book) => sum + (book.isFree ? 0.0 : 9.99),
-    );
-    final freeCount = items.where((book) => book.isFree).length;
+    final freeCount = items.where((b) => b.isFree).length;
     final paidCount = items.length - freeCount;
+    final total = items.fold<double>(0, (sum, b) => sum + (b.isFree ? 0 : 9.99));
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -304,11 +230,7 @@ class _CartPageState extends State<CartPage>
         ),
         child: Column(
           children: [
-            _buildSummaryRow(
-              'Free Books',
-              '$freeCount',
-              Icons.workspace_premium,
-            ),
+            _buildSummaryRow('Free Books', '$freeCount', Icons.workspace_premium),
             const SizedBox(height: 12),
             _buildSummaryRow('Paid Books', '$paidCount', Icons.payments),
             const SizedBox(height: 12),
@@ -360,21 +282,16 @@ class _CartPageState extends State<CartPage>
     );
   }
 
+  // Checkout Button
   Widget _buildCheckoutButton() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: ElevatedButton(
         onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Checkout feature coming soon!'),
+          Get.snackbar('Info', 'Checkout feature coming soon!',
+              snackPosition: SnackPosition.BOTTOM,
               backgroundColor: Colors.green.shade400,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          );
+              colorText: Colors.white);
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF6C63FF),
@@ -402,6 +319,7 @@ class _CartPageState extends State<CartPage>
   }
 }
 
+// Individual Cart Item Card
 class _CartItemCard extends StatelessWidget {
   final BookModel book;
   final VoidCallback onRemove;
@@ -446,7 +364,13 @@ class _CartItemCard extends StatelessWidget {
                 _buildThumbnail(),
                 const SizedBox(width: 16),
                 Expanded(child: _buildInfo()),
-                _buildActions(context),
+                IconButton(
+                  onPressed: onRemove,
+                  icon: const Icon(Icons.delete_outline),
+                  color: Colors.red.shade400,
+                  iconSize: 26,
+                  tooltip: 'Remove',
+                ),
               ],
             ),
           ),
@@ -472,27 +396,19 @@ class _CartItemCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: book.thumbnail.isNotEmpty
-            ? Image.network(
-                book.thumbnail,
-                fit: BoxFit.cover,
-                errorBuilder: (c, e, s) => _placeholderThumbnail(),
-              )
-            : _placeholderThumbnail(),
+            ? Image.network(book.thumbnail, fit: BoxFit.cover)
+            : Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF6C63FF).withOpacity(0.3),
+                      const Color(0xFF8B7FFF).withOpacity(0.3),
+                    ],
+                  ),
+                ),
+                child: const Icon(Icons.book, size: 40, color: Colors.white),
+              ),
       ),
-    );
-  }
-
-  Widget _placeholderThumbnail() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFF6C63FF).withOpacity(0.3),
-            const Color(0xFF8B7FFF).withOpacity(0.3),
-          ],
-        ),
-      ),
-      child: const Icon(Icons.book, size: 40, color: Colors.white),
     );
   }
 
@@ -533,9 +449,7 @@ class _CartItemCard extends StatelessWidget {
             color: book.isFree ? Colors.green.shade50 : Colors.orange.shade50,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: book.isFree
-                  ? Colors.green.shade200
-                  : Colors.orange.shade200,
+              color: book.isFree ? Colors.green.shade200 : Colors.orange.shade200,
             ),
           ),
           child: Text(
@@ -543,66 +457,11 @@ class _CartItemCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: book.isFree
-                  ? Colors.green.shade700
-                  : Colors.orange.shade700,
+              color: book.isFree ? Colors.green.shade700 : Colors.orange.shade700,
             ),
           ),
         ),
       ],
     );
-  }
-
-  Widget _buildActions(BuildContext context) {
-    return IconButton(
-      onPressed: onRemove,
-      icon: const Icon(Icons.delete_outline),
-      color: Colors.red.shade400,
-      iconSize: 26,
-      tooltip: 'Remove',
-    );
-  }
-}
-
-// CartManager with ChangeNotifier pattern
-class CartManager {
-  static final List<BookModel> _cartItems = [];
-  static final List<VoidCallback> _listeners = [];
-
-  static List<BookModel> get cartItems => List.unmodifiable(_cartItems);
-
-  static void addListener(VoidCallback listener) {
-    _listeners.add(listener);
-  }
-
-  static void removeListener(VoidCallback listener) {
-    _listeners.remove(listener);
-  }
-
-  static void _notifyListeners() {
-    for (var listener in _listeners) {
-      listener();
-    }
-  }
-
-  static void addToCart(BookModel book) {
-    if (!_cartItems.any((item) => item.id == book.id)) {
-      _cartItems.add(book);
-      _notifyListeners();
-    }
-  }
-
-  static void removeFromCart(BookModel book) {
-    _cartItems.removeWhere((item) => item.id == book.id);
-    _notifyListeners();
-  }
-
-  static void clearCart() {
-    _cartItems.clear();
-    _notifyListeners();
-  }
-
-  static bool isInCart(BookModel book) {
-    return _cartItems.any((item) => item.id == book.id);
   }
 }

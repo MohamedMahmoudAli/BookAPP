@@ -1,5 +1,5 @@
 import 'package:book_app/features/account/account_page.dart';
-import 'package:book_app/features/cart/cart_page.dart';
+import 'package:book_app/features/cart/view/cart_page.dart';
 import 'package:book_app/features/category/categories_page.dart';
 import 'package:book_app/features/home/home_view.dart';
 import 'package:book_app/core/controllers/nav_controller.dart';

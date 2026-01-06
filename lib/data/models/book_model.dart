@@ -6,11 +6,10 @@ class BookModel {
   final String description;
   final String publishedDate;
   final String category;
-
   final double rating;
   final int ratingsCount;
   final int pageCount;
-  final bool isFree;  // Added: هل الكتاب مجاني
+  final bool isFree;
 
   BookModel({
     required this.id,
@@ -26,16 +25,18 @@ class BookModel {
     required this.isFree,
   });
 
-  factory BookModel.fromJson(Map<String, dynamic> json) {
+  // ===============================
+  // 1️⃣ FROM GOOGLE BOOKS API
+  // ===============================
+  factory BookModel.fromApiJson(Map<String, dynamic> json) {
     final volumeInfo = json['volumeInfo'] ?? {};
     final saleInfo = json['saleInfo'] ?? {};
     final accessInfo = json['accessInfo'] ?? {};
 
-    // Check if book is free
     bool isFree = false;
-    if (saleInfo['saleability'] == 'FREE' || 
+    if (saleInfo['saleability'] == 'FREE' ||
         accessInfo['accessViewStatus'] == 'FULL_PUBLIC_DOMAIN' ||
-        saleInfo['isEbook'] == true && saleInfo['listPrice'] == null) {
+        (saleInfo['isEbook'] == true && saleInfo['listPrice'] == null)) {
       isFree = true;
     }
 
@@ -51,9 +52,7 @@ class BookModel {
       category: volumeInfo['categories'] != null
           ? volumeInfo['categories'][0]
           : 'General',
-
-      // Fixed: Handle null values properly with default 0.0
-      rating: volumeInfo['averageRating'] != null 
+      rating: volumeInfo['averageRating'] != null
           ? (volumeInfo['averageRating'] as num).toDouble()
           : 0.0,
       ratingsCount: volumeInfo['ratingsCount'] ?? 0,
@@ -61,4 +60,57 @@ class BookModel {
       isFree: isFree,
     );
   }
+
+  // ===============================
+  // 2️⃣ TO FIRESTORE
+  // ===============================
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'authors': authors,
+      'thumbnail': thumbnail,
+      'description': description,
+      'publishedDate': publishedDate,
+      'category': category,
+      'rating': rating,
+      'ratingsCount': ratingsCount,
+      'pageCount': pageCount,
+      'isFree': isFree,
+    };
+  }
+
+  // ===============================
+  // 3️⃣ FROM FIRESTORE
+  // ===============================
+  factory BookModel.fromFirestore(Map<String, dynamic> json) {
+    return BookModel(
+      id: json['id'] ?? '',
+      title: json['title'] ?? '',
+      authors: json['authors'] ?? '',
+      thumbnail: json['thumbnail'] ?? '',
+      description: json['description'] ?? '',
+      publishedDate: json['publishedDate'] ?? '',
+      category: json['category'] ?? '',
+      rating: (json['rating'] ?? 0).toDouble(),
+      ratingsCount: json['ratingsCount'] ?? 0,
+      pageCount: json['pageCount'] ?? 0,
+      isFree: json['isFree'] ?? false,
+    );
+  }
+  Map<String, dynamic> toMap() {
+  return {
+    'id': id,
+    'title': title,
+    'authors': authors.split(', '), // store as List<String> for Firestore
+    'thumbnail': thumbnail,
+    'description': description,
+    'publishedDate': publishedDate,
+    'category': category,
+    'rating': rating,
+    'ratingsCount': ratingsCount,
+    'pageCount': pageCount,
+    'isFree': isFree,
+  };
+}
 }
