@@ -1,3 +1,4 @@
+import 'package:book_app/core/constants/storage_keys.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -34,6 +35,8 @@ class LoginController extends GetxController {
         box.write('uid', uid);
         print("UID saved: $uid");
       }
+      GetStorage().write(StorageKeys.isLoggedIn, true);
+
 
       Get.offAllNamed('/home');
 

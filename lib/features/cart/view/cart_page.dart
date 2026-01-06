@@ -13,7 +13,7 @@ class CartPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-     final CartController controller = Get.put(
+    final CartController controller = Get.put(
       CartController(
         CartRepository(
           firestore: FirebaseFirestore.instance,
@@ -48,7 +48,7 @@ class CartPage extends StatelessWidget {
                     const SizedBox(height: 20),
                     _buildSummary(cartItems),
                     const SizedBox(height: 20),
-                    _buildCheckoutButton(),
+                    _buildCheckoutButton(cartItems),
                     const SizedBox(height: 100),
                   ],
                 ),
@@ -209,7 +209,10 @@ class CartPage extends StatelessWidget {
   Widget _buildSummary(List<BookModel> items) {
     final freeCount = items.where((b) => b.isFree).length;
     final paidCount = items.length - freeCount;
-    final total = items.fold<double>(0, (sum, b) => sum + (b.isFree ? 0 : 9.99));
+    final total = items.fold<double>(
+      0,
+      (sum, b) => sum + (b.isFree ? 0 : 9.99),
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -230,7 +233,11 @@ class CartPage extends StatelessWidget {
         ),
         child: Column(
           children: [
-            _buildSummaryRow('Free Books', '$freeCount', Icons.workspace_premium),
+            _buildSummaryRow(
+              'Free Books',
+              '$freeCount',
+              Icons.workspace_premium,
+            ),
             const SizedBox(height: 12),
             _buildSummaryRow('Paid Books', '$paidCount', Icons.payments),
             const SizedBox(height: 12),
@@ -283,15 +290,17 @@ class CartPage extends StatelessWidget {
   }
 
   // Checkout Button
-  Widget _buildCheckoutButton() {
+
+  Widget _buildCheckoutButton(List<BookModel> items) {
+    final int total = items
+        .fold<double>(0, (sum, b) => sum + (b.isFree ? 0 : 9.99))
+        .toInt();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: ElevatedButton(
         onPressed: () {
-          Get.snackbar('Info', 'Checkout feature coming soon!',
-              snackPosition: SnackPosition.BOTTOM,
-              backgroundColor: Colors.green.shade400,
-              colorText: Colors.white);
+          Get.find<CartController>().payNow();
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF6C63FF),
@@ -449,7 +458,9 @@ class _CartItemCard extends StatelessWidget {
             color: book.isFree ? Colors.green.shade50 : Colors.orange.shade50,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: book.isFree ? Colors.green.shade200 : Colors.orange.shade200,
+              color: book.isFree
+                  ? Colors.green.shade200
+                  : Colors.orange.shade200,
             ),
           ),
           child: Text(
@@ -457,7 +468,9 @@ class _CartItemCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: book.isFree ? Colors.green.shade700 : Colors.orange.shade700,
+              color: book.isFree
+                  ? Colors.green.shade700
+                  : Colors.orange.shade700,
             ),
           ),
         ),

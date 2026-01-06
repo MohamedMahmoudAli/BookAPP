@@ -1,8 +1,10 @@
+import 'package:book_app/core/constants/storage_keys.dart';
 import 'package:book_app/core/controllers/nav_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -55,6 +57,8 @@ class _AccountPageState extends State<AccountPage> {
   Future<void> _logout() async {
     try {
       await _auth.signOut();
+      GetStorage().write(StorageKeys.isLoggedIn, false);
+
       Get.offAllNamed('/login');
     } catch (e) {
       Get.snackbar(
