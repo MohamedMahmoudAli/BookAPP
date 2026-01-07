@@ -189,7 +189,7 @@ class _FeaturedCard extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          book.authors,
+          book.authorsAsString,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13),

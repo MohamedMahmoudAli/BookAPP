@@ -1,7 +1,7 @@
 class BookModel {
   final String id;
   final String title;
-  final String authors;
+  final List<String> authors; // now a list
   final String thumbnail;
   final String description;
   final String publishedDate;
@@ -44,13 +44,13 @@ class BookModel {
       id: json['id'] ?? '',
       title: volumeInfo['title'] ?? 'No Title',
       authors: volumeInfo['authors'] != null
-          ? (volumeInfo['authors'] as List).join(', ')
-          : 'Unknown Author',
+          ? List<String>.from(volumeInfo['authors'])
+          : ['Unknown Author'],
       thumbnail: volumeInfo['imageLinks']?['thumbnail'] ?? '',
       description: volumeInfo['description'] ?? 'No Description',
       publishedDate: volumeInfo['publishedDate'] ?? 'Unknown',
       category: volumeInfo['categories'] != null
-          ? volumeInfo['categories'][0]
+          ? (volumeInfo['categories'] as List).first.toString()
           : 'General',
       rating: volumeInfo['averageRating'] != null
           ? (volumeInfo['averageRating'] as num).toDouble()
@@ -68,7 +68,7 @@ class BookModel {
     return {
       'id': id,
       'title': title,
-      'authors': authors,
+      'authors': authors, // store as List<String>
       'thumbnail': thumbnail,
       'description': description,
       'publishedDate': publishedDate,
@@ -87,7 +87,9 @@ class BookModel {
     return BookModel(
       id: json['id'] ?? '',
       title: json['title'] ?? '',
-      authors: json['authors'] ?? '',
+      authors: json['authors'] != null
+          ? List<String>.from(json['authors'])
+          : ['Unknown Author'],
       thumbnail: json['thumbnail'] ?? '',
       description: json['description'] ?? '',
       publishedDate: json['publishedDate'] ?? '',
@@ -98,19 +100,23 @@ class BookModel {
       isFree: json['isFree'] ?? false,
     );
   }
+
   Map<String, dynamic> toMap() {
-  return {
-    'id': id,
-    'title': title,
-    'authors': authors.split(', '), // store as List<String> for Firestore
-    'thumbnail': thumbnail,
-    'description': description,
-    'publishedDate': publishedDate,
-    'category': category,
-    'rating': rating,
-    'ratingsCount': ratingsCount,
-    'pageCount': pageCount,
-    'isFree': isFree,
-  };
-}
+    return {
+      'id': id,
+      'title': title,
+      'authors': authors, // still List<String>
+      'thumbnail': thumbnail,
+      'description': description,
+      'publishedDate': publishedDate,
+      'category': category,
+      'rating': rating,
+      'ratingsCount': ratingsCount,
+      'pageCount': pageCount,
+      'isFree': isFree,
+    };
+  }
+
+  // Helper to display authors as string
+  String get authorsAsString => authors.join(', ');
 }

@@ -168,7 +168,7 @@ class BookCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            book.authors,
+            book.authorsAsString,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(color: Colors.grey[600], fontSize: 11),
@@ -243,7 +243,7 @@ class CompactBookCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  book.authors,
+                  book.authorsAsString,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(color: Colors.grey[600], fontSize: 10),

@@ -336,7 +336,7 @@ class BookGridCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            book.authors,
+            book.authorsAsString,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
